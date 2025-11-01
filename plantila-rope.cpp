@@ -42,26 +42,6 @@ class Rope {
   }
 };
 
-// myupdate con una sola tirada
-// typename Op::Value myUpdate(int l, int r, typename Op::Value x, int node, int node_l, int node_r) {
-//       if (r <= node_l || node_r <= l) {
-//           return data[node];
-//       }
-      
-//       if (node_r - node_l == 1) {
-//           data[node] = x;
-//           return data[node];
-//       }
-      
-//       int mid = (node_l + node_r) / 2;
-//       data[node] = Op::op(
-//           myUpdate(l, r, x, 2*node+1, node_l, mid),
-//           myUpdate(l, r, x, 2*node+2, mid, node_r)
-//       );
-//       return data[node];
-//   }
-
-
 template <typename T>
 concept LazyUpdate = requires {
   typename T::Value;
