@@ -34,7 +34,7 @@ class LazyRope {
     lazy_data[node] = Op::neut();
   }
 
-  void lazy_update(int node, int l_, int r_, int l, int r, int upd) {
+  void lazy_update(int node, int l_, int r_, int l, int r, typename Op::Update upd) {
     if (r <= l_ || r_ <= l) {
       return;
     }
@@ -47,16 +47,18 @@ class LazyRope {
     lazy_update(der(node), m_, r_, l, r, upd);
     data[node] = Op::op(data[izq(node)], data[der(node)]);
   }
-  // +3 -> [1,3]
-  // query [2,2]
+ 
+
   typename Op::Value lazy_query(int l, int r, int node, int l_, int r_) {
     if (r <= l_ || r_ <= l) {
       return Op::neut();
     }
+    
+    if (lazy_data[node] != Op::neut()) {
+      propagate(node, l_, r_);
+    }
+    
     if (l <= l_ && r_ <= r) {
-      if (lazy_data[node] != Op::neut()) {
-        propagate(node, l_, r_);
-      }
       return data[node];
     }
     int m_ = (l_ + r_) / 2;
@@ -83,6 +85,10 @@ class LazyRope {
 
   std::vector<typename Op::Value> get_data() {
     return data;  // not a direct data reference
+  }
+
+  std::vector<typename Op::Update> get_lazy_data() {
+    return lazy_data;  // not a direct data reference
   }
 };
 

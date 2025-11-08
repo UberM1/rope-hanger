@@ -18,6 +18,7 @@ static_assert(Monoid<IntSum>, "IntSum must satisfy Monoid concept");
 
 struct SetUnion {
     using Value = std::set<int>;
+    using Update = std::set<int>;
     static Value op(const Value &a, const Value &b) {
         Value res;
         // std::set_union(a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(res));
@@ -105,29 +106,71 @@ int tests_StringConcat() {
     return 0;
 }
 
-int tests_LazyRope() {
+int tests_LazyIntSum() {
     LazyRope<IntSum> lazyRope(4);
-    assert(lazyRope.query(0,4) == IntSum::neut());
-    lazyRope.update(0, 4, 1);
-    auto data = lazyRope.get_data();
-    std::cout << "Data after update: ";
-    for(int x : data) std::cout << x << " ";
-    std::cout << "\n";
-    // assert((lazyRope.get_data() == std::vector<int>({4, 0, 0, 0, 0, 0, 0})));
-    assert(lazyRope.query(0,1) == 1);
-    data = lazyRope.get_data();
-    std::cout << "Data after query: ";
-    for(int x : data) std::cout << x << " ";
-    std::cout << "\n";
-    // assert((lazyRope.get_data() == std::vector<int>({4, 2, 0, 1, 0, 0, 0})));
-    std::cout << "Lazy rope tests passed!!\n";
+    
+    // Test initial state
+    assert(lazyRope.query(0,4) == 0);
+    auto lazy_data = lazyRope.get_lazy_data();
+    assert((lazy_data == std::vector<int>(7, 0)));
+    
+    // Range update [0,4) with value 5
+    lazyRope.update(0, 4, 5);
+    assert(lazyRope.query(0,1) == 5);
+    assert(lazyRope.query(1,2) == 5);
+    assert(lazyRope.query(0,4) == 20); // 5*4 = 20
+    
+    // Partial range update [1,3) with value 3
+    lazyRope.update(1, 3, 3);
+    assert(lazyRope.query(0,1) == 5);
+    assert(lazyRope.query(1,2) == 8); // 5+3
+    assert(lazyRope.query(2,3) == 8); // 5+3
+    assert(lazyRope.query(3,4) == 5);
+    assert(lazyRope.query(0,4) == 26); // 5+8+8+5
+    
+    // Test lazy_data state after updates
+    lazy_data = lazyRope.get_lazy_data();
+    // Verify that lazy propagation is working (some values should be non-zero)
+    bool has_lazy_values = false;
+    for(int val : lazy_data) {
+        if(val != 0) has_lazy_values = true;
+    }
+    assert(has_lazy_values);
+
+    std::cout << "LazyIntSum tests passed!!\n";
+    return 0;
+}
+
+int tests_LazySetUnion() {
+    LazyRope<SetUnion> lazyRope(3);
+    
+    // Test initial state
+    assert(lazyRope.query(0,3).empty());
+    auto lazy_data = lazyRope.get_lazy_data();
+    assert((lazy_data == std::vector<std::set<int>>(5, std::set<int>{})));
+    
+    // Range update [0,3) with set {1,2}
+    lazyRope.update(0, 3, {1, 2});
+    assert((lazyRope.query(0,1) == std::set<int>({1, 2})));
+    assert((lazyRope.query(1,2) == std::set<int>({1, 2})));
+    assert((lazyRope.query(0,3) == std::set<int>({1, 2})));
+    
+    // Partial range update [1,2) with set {3,4}
+    lazyRope.update(1, 2, {3, 4});
+    assert((lazyRope.query(0,1) == std::set<int>({1, 2})));
+    assert((lazyRope.query(1,2) == std::set<int>({1, 2, 3, 4})));
+    assert((lazyRope.query(2,3) == std::set<int>({1, 2})));
+    assert((lazyRope.query(0,3) == std::set<int>({1, 2, 3, 4})));
+    
+    std::cout << "LazySetUnion tests passed!!\n";
     return 0;
 }
 
 int main() {
-    // tests_IntSum();
-    // tests_SetUnion();
-    // tests_StringConcat();
-    tests_LazyRope();
+    tests_IntSum();
+    tests_SetUnion();
+    tests_StringConcat();
+    tests_LazyIntSum();
+    tests_LazySetUnion();
     return 0;
 }
