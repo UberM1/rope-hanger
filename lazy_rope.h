@@ -1,54 +1,89 @@
 #ifndef LAZY_ROPE_H
 #define LAZY_ROPE_H
 
-#include "structures.h"
 #include <vector>
 
-template <typename T>
-concept LazyUpdate = requires {
-  typename T::Value;
-  typename T::Update;
-} && requires(typename T::Update up, typename T::Value val, int len) {
-  { T::apply(up, val, len) } -> std::same_as<typename T::Value>;
-};
+#include "structures.h"
 
 template <typename Op>
-  requires LazyUpdate<Op>
+requires Monoid<Op>
 class LazyRope {
-private:
-  void lazy_update(int l, int r, typename Op::Update x, int node, int node_l, int node_r) {
-    // Implementación de lazy_update
+ private:
+  int n;
+  std::vector<typename Op::Value> data;
+  std::vector<typename Op::Update> lazy_data;
+
+  int izq(int n) { return 2 * n + 1; }
+  int der(int n) { return 2 * n + 2; }
+
+  void apply(int pos, int times) {
+    while (times > 0) {
+      data[pos] = Op::op(data[pos], lazy_data[pos]);
+      times -= 1;
+    }
   }
 
-  // lazy_query:
+  void propagate(int node, int l_, int r_) {
+    int len = r_ - l_;
+    if (len > 1) {  // no es hoja
+      lazy_data[izq(node)] = Op::op(lazy_data[izq(node)], lazy_data[node]);
+      lazy_data[der(node)] = Op::op(lazy_data[der(node)], lazy_data[node]);
+    }
 
+    apply(node, len);
+    lazy_data[node] = Op::neut();
+  }
+
+  void lazy_update(int node, int l_, int r_, int l, int r, int upd) {
+    if (r <= l_ || r_ <= l) {
+      return;
+    }
+    if (l <= l_ && r_ <= r) {
+      lazy_data[node] = Op::op(lazy_data[node], upd);
+      return;
+    }
+    int m_ = (l_ + r_) / 2;
+    lazy_update(izq(node), l_, m_, l, r, upd);
+    lazy_update(der(node), m_, r_, l, r, upd);
+    data[node] = Op::op(data[izq(node)], data[der(node)]);
+  }
+  // +3 -> [1,3]
+  // query [2,2]
+  typename Op::Value lazy_query(int l, int r, int node, int l_, int r_) {
+    if (r <= l_ || r_ <= l) {
+      return Op::neut();
+    }
+    if (l <= l_ && r_ <= r) {
+      if (lazy_data[node] != Op::neut()) {
+        propagate(node, l_, r_);
+      }
+      return data[node];
+    }
+    int m_ = (l_ + r_) / 2;
+    return Op::op(lazy_query(l, r, izq(node), l_, m_),
+                  lazy_query(l, r, der(node), m_, r_));
+  }
 
  public:
   LazyRope(int n) {
     int tree_size = 1;
     while (tree_size < n) {
-      tree_size <<= 1;
+      tree_size *= 2;
     }
     data.resize(2 * tree_size - 1, Op::neut());
     lazy_data.resize(2 * tree_size - 1, Op::neut());
     this->n = tree_size;
   }
 
-  typename Op::Value query(int l, int r) {
-    return lazy_query(l, r, 0, 0, n);
-  }
+  typename Op::Value query(int l, int r) { return lazy_query(l, r, 0, 0, n); }
 
   void update(int l, int r, typename Op::Update x) {
-    lazy_update(l, r, x, 0, 0, n);
+    lazy_update(0, 0, n, l, r, x);
   }
 
-  void lazy_update(int l, int r, typename Op::Update x) {
-    local_lazy_update(l, r, x, 0, 0, n);
+  std::vector<typename Op::Value> get_data() {
+    return data;  // not a direct data reference
   }
-
- private:
-  std::vector<typename Op::Value> data;
-  std::vector<typename Op::Update> lazy_data;
 };
 
-#endif // LAZY_ROPE_H
+#endif  // LAZY_ROPE_H

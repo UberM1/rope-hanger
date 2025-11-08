@@ -9,6 +9,7 @@
 
 struct IntSum {
     using Value = int;
+    using Update = int;
     static int op(int a, int b) { return a + b; }
     static int neut() { return 0; }
 };
@@ -87,8 +88,8 @@ int tests_SetUnion() {
     setRope.update(0, {1, 2});
     setRope.update(1, {2, 3});
     setRope.update(2, {4});
-    // auto result = setRope.query(0, 3);
-    // assert((result == std::set<int>({1, 2, 3, 4})));
+    auto result = setRope.query(0, 3);
+    assert((result == std::set<int>({1, 2, 3, 4})));
     std::cout << "SetUnion tests passed!!\n";
     return 0;
 }
@@ -104,9 +105,29 @@ int tests_StringConcat() {
     return 0;
 }
 
+int tests_LazyRope() {
+    LazyRope<IntSum> lazyRope(4);
+    assert(lazyRope.query(0,4) == IntSum::neut());
+    lazyRope.update(0, 4, 1);
+    auto data = lazyRope.get_data();
+    std::cout << "Data after update: ";
+    for(int x : data) std::cout << x << " ";
+    std::cout << "\n";
+    // assert((lazyRope.get_data() == std::vector<int>({4, 0, 0, 0, 0, 0, 0})));
+    assert(lazyRope.query(0,1) == 1);
+    data = lazyRope.get_data();
+    std::cout << "Data after query: ";
+    for(int x : data) std::cout << x << " ";
+    std::cout << "\n";
+    // assert((lazyRope.get_data() == std::vector<int>({4, 2, 0, 1, 0, 0, 0})));
+    std::cout << "Lazy rope tests passed!!\n";
+    return 0;
+}
+
 int main() {
-    tests_IntSum();
-    tests_SetUnion();
-    tests_StringConcat();
+    // tests_IntSum();
+    // tests_SetUnion();
+    // tests_StringConcat();
+    tests_LazyRope();
     return 0;
 }

@@ -35,7 +35,7 @@ class Rope {
     Rope(int n) {
       int tree_size = 1;
       while (tree_size < n) {
-          tree_size <<= 1;
+        tree_size *= 2;
       }
       data.resize(2 * tree_size - 1, Op::neut());
       this->n = tree_size;
