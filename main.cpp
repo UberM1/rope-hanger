@@ -1,11 +1,11 @@
 #include "structures.h"
 #include "rope.h"
 #include "lazy_rope.h"
-#include <cassert>
 #include <iostream>
 #include <set>
 #include <algorithm>
 #include <iterator> 
+#include <cassert>
 
 struct IntSum {
     using Value = int;
@@ -106,21 +106,43 @@ int tests_StringConcat() {
     return 0;
 }
 
+void printDatas(LazyRope<IntSum> r) {
+    std::cout << "Data: ";
+    auto data = r.get_data();
+    for (int val : data) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Lazy Data: ";
+    auto lazy_data = r.get_lazy_data();
+    for (int val : lazy_data) {
+    std::cout << val << " ";
+    }
+    std::cout << std::endl;
+}
+
 int tests_LazyIntSum() {
     LazyRope<IntSum> lazyRope(4);
     
-    // Test initial state
     assert(lazyRope.query(0,4) == 0);
-    auto lazy_data = lazyRope.get_lazy_data();
+    typename std::vector<int> lazy_data = lazyRope.get_lazy_data();
     assert((lazy_data == std::vector<int>(7, 0)));
     
-    // Range update [0,4) with value 5
+    // test1
     lazyRope.update(0, 4, 5);
+    lazy_data = lazyRope.get_lazy_data();
+    // verifico que hay valores en lazy_data
+    bool has_lazy_values = false;
+    for(int val : lazy_data) {
+        if(val != 0) has_lazy_values = true;
+    }
+    assert(has_lazy_values);
+
     assert(lazyRope.query(0,1) == 5);
     assert(lazyRope.query(1,2) == 5);
     assert(lazyRope.query(0,4) == 20); // 5*4 = 20
     
-    // Partial range update [1,3) with value 3
+    // test2
     lazyRope.update(1, 3, 3);
     assert(lazyRope.query(0,1) == 5);
     assert(lazyRope.query(1,2) == 8); // 5+3
@@ -128,17 +150,49 @@ int tests_LazyIntSum() {
     assert(lazyRope.query(3,4) == 5);
     assert(lazyRope.query(0,4) == 26); // 5+8+8+5
     
-    // Test lazy_data state after updates
     lazy_data = lazyRope.get_lazy_data();
-    // Verify that lazy propagation is working (some values should be non-zero)
-    bool has_lazy_values = false;
-    for(int val : lazy_data) {
-        if(val != 0) has_lazy_values = true;
-    }
-    assert(has_lazy_values);
+    // // Verify that lazy propagation is working (some values should be non-zero)
+    // has_lazy_values = false;
+    // for(int val : lazy_data) {
+    //     if(val != 0) has_lazy_values = true;
+    // }
+    // assert(has_lazy_values);  // Depending on propagation, this may or may not hold
+    // Despues de la actualizacion de arriba queda todo en 0
+    // porque cuando accede al rango 1,3 va hasta las hojas y propago todo
+    assert((lazy_data == std::vector<int>{0, 0, 0, 0, 0, 0, 0}));
 
     std::cout << "LazyIntSum tests passed!!\n";
     return 0;
+}
+
+void printDatas(LazyRope<SetUnion> r) {
+    std::cout << "Data: ";
+    auto data = r.get_data();
+    for (const auto &s : data) {
+        std::cout << "{";
+        bool first = true;
+        for (int v : s) {
+            if (!first) std::cout << ", ";
+            std::cout << v;
+            first = false;
+        }
+        std::cout << "} ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Lazy Data: ";
+    auto lazy_data = r.get_lazy_data();
+    for (const auto &s : lazy_data) {
+        std::cout << "{";
+        bool first = true;
+        for (int v : s) {
+            if (!first) std::cout << ", ";
+            std::cout << v;
+            first = false;
+        }
+        std::cout << "} ";
+    }
+    std::cout << std::endl;
 }
 
 int tests_LazySetUnion() {
@@ -147,7 +201,7 @@ int tests_LazySetUnion() {
     // Test initial state
     assert(lazyRope.query(0,3).empty());
     auto lazy_data = lazyRope.get_lazy_data();
-    assert((lazy_data == std::vector<std::set<int>>(5, std::set<int>{})));
+    assert((lazy_data == std::vector<std::set<int>>(7, std::set<int>{})));
     
     // Range update [0,3) with set {1,2}
     lazyRope.update(0, 3, {1, 2});

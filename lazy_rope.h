@@ -2,7 +2,8 @@
 #define LAZY_ROPE_H
 
 #include <vector>
-
+#include <iostream>
+#include <iterator> 
 #include "structures.h"
 
 template <typename Op>
@@ -11,7 +12,7 @@ class LazyRope {
  private:
   int n;
   std::vector<typename Op::Value> data;
-  std::vector<typename Op::Update> lazy_data;
+  std::vector<typename Op::Value> lazy_data;
 
   int izq(int n) { return 2 * n + 1; }
   int der(int n) { return 2 * n + 2; }
@@ -25,21 +26,27 @@ class LazyRope {
 
   void propagate(int node, int l_, int r_) {
     int len = r_ - l_;
-    if (len > 1) {  // no es hoja
+    if (len > 1) {
       lazy_data[izq(node)] = Op::op(lazy_data[izq(node)], lazy_data[node]);
       lazy_data[der(node)] = Op::op(lazy_data[der(node)], lazy_data[node]);
     }
 
     apply(node, len);
+
     lazy_data[node] = Op::neut();
   }
 
-  void lazy_update(int node, int l_, int r_, int l, int r, typename Op::Update upd) {
+  void lazy_update(int node, int l_, int r_, int l, int r, typename Op::Value upd) {
+    propagate(node, l_, r_);
     if (r <= l_ || r_ <= l) {
       return;
     }
     if (l <= l_ && r_ <= r) {
+      // una vez que el intervalo de la actualizacion cubre un nodo,
+      // actualizar ese nodo y dejar todos sus descendientes sin actualizar, 
+      // dejando una marca en los hijos.
       lazy_data[node] = Op::op(lazy_data[node], upd);
+      propagate(node, l_, r_);
       return;
     }
     int m_ = (l_ + r_) / 2;
@@ -79,7 +86,7 @@ class LazyRope {
 
   typename Op::Value query(int l, int r) { return lazy_query(l, r, 0, 0, n); }
 
-  void update(int l, int r, typename Op::Update x) {
+  void update(int l, int r, typename Op::Value x) {
     lazy_update(0, 0, n, l, r, x);
   }
 
@@ -87,7 +94,7 @@ class LazyRope {
     return data;  // not a direct data reference
   }
 
-  std::vector<typename Op::Update> get_lazy_data() {
+  std::vector<typename Op::Value> get_lazy_data() {
     return lazy_data;  // not a direct data reference
   }
 };
