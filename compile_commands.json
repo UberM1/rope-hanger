@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/home/ubr/proyects/rope-hanger",
+    "command": "g++ -std=c++20 -Wall -Wextra -I. main.cpp -o main",
+    "file": "main.cpp"
+  }
+]
